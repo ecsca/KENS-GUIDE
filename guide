@@ -1,0 +1,33 @@
+KENS Project#1 guide - by ECSCA
+
+Project 1은 open, bind test case들을 통과하는 것으로 socket, close, bind, getsockname을 짜야함.
+
+우리가 건드려야하는 코드는 app/TestTCP/TCPAssignment.cpp, ~.hpp
+랩시간에 TA가 설명해준바와 같이 파일 내의 Syscall Callback함수의 case문에서 socket, close, bind, getsockname의 주석처리를 지우고 이들에 해당하는 함수들을 만들어주면 Task 완료.
+그럼 여기서 socket, close, bind, getsockname과 같은 함수들이 어떤 과정을 거쳐 해당 위치까지 오는지를 먼저 파악해야 전체 내용을 짜기 편할테니, 이 부분에 대해 먼저 설명을 하자.
+모든 socket 관련 syscall이 동일한 과정을 거치므로 socket함수를 기준으로 설명한다.
+
+처음 socket함수가 불리면 이는 
+src/Networking/TCP/E_TCPApplication.cpp의 socket함수가 불리는 것을 의미.
+이 함수는 
+src/Networking/E_host.cpp의 E_Syscall함수를 부르게되고, 이에따라
+src/E/E_System.cpp의sendMessage를 통해 syscall요청이 message queue로 들어가게되지.
+
+이후
+src/Networking/E_host.cpp의messageReceived에 의해 해당 message를 처리하면서 syscall message인걸 파악하게되면
+우리가 수정할
+app/TestTCP/TCPAssignmnet.cpp의 systemCallback함수에서 그에 대응되는 함수(우리가 구성할 것)를 불러 syscall에 대한 처리를 마무리해주게됨.
+
+그럼, 각 함수들 socket, close, bind, getsockname은 실제 존재하는 TCP함수들과 동일하게 짜면 되니까.. 공부해나가면서 배우시면되겠고, 
+다만 혼자 찾느라 좀 어려웠던 부분은
+syscall을 마무리할 때 return값을 어떻게 넘겨줄 것인가 인데, 이를 위해서는
+void SystemCallInterface::returnSystemCall(UUID syscallUUID, int val)을 사용하면 됨.
+
+다행히도 TCPAssignment class는 거의 모든 class들을 상속하고있기 때문에, 이러한 함수들을 직접 사용할 수 있어 주어진 함수들을 사용하는데에는 별다른 어려움이 없음
+
+socket은 정말 socket할당해주는거니까 크게 어려운거 없을거고..
+close도 마찬가지.
+bind에서 조금 어려웠던건, 
+1. sockaddr_in과, sockaddr의 차이에 대해 고민했던부분
+2. bind되었을 때 관련 정보들을 어떤 data structure에 저장할 것인가
+3. INADDR_ANY에 대한 이해와 이에 대한 처리
